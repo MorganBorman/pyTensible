@@ -1,0 +1,8 @@
+[Plugin]
+Name = Plugin Template
+SymbolicName = PluginTemplate
+Version = 0.0.1
+Author = Morgan Borman
+Enabled = False
+
+[Dependencies]

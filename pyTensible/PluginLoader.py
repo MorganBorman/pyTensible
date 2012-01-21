@@ -71,7 +71,7 @@ class PluginLoader:
 		if not self.unloaded:
 			for pluginName, pluginObject in self.pluginObjects.items():
 				try:
-					pluginObject.unload()
+					pluginObject.unload(self)
 					logger.info("Unloaded plugin: " + pluginName)
 				except:
 					exceptionType, exceptionValue, exceptionTraceback = sys.exc_info() #@UnusedVariable
@@ -193,7 +193,7 @@ class PluginLoader:
 			self.plugins[manifest.SymbolicName] = pluginModule
 			
 			#load the actual plugin
-			self.pluginObjects[manifest.SymbolicName].load()
+			self.pluginObjects[manifest.SymbolicName].load(self)
 			logger.info("Loaded plugin: " + manifest.Name)
 			self.reloadOrder.append(manifest.SymbolicName)
 		else:

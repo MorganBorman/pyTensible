@@ -1,6 +1,8 @@
 import logging
 
-def setup_logging(path, console_level=logging.ERROR, file_level=logging.DEBUG):
+logging_path = "pyTensible.log"
+
+def setup_logging(path=logging_path, console_level=logging.ERROR, file_level=logging.DEBUG):
 	global logging_path
 	logging_path = path
 
@@ -17,10 +19,6 @@ def setup_logging(path, console_level=logging.ERROR, file_level=logging.DEBUG):
 	# add the handlers to the logger
 	logger.addHandler(fh)
 	logger.addHandler(ch)
-	
-logging_path = "pyTensible.log"
 
 logger = logging.getLogger('pyTensible')
 logger.setLevel(logging.DEBUG)
-
-setup_logging(logging_path)
