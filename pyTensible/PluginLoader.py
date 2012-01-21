@@ -202,7 +202,7 @@ class PluginLoader:
 			
 	def getResource(self, symbolicName):
 		try:
-			return self.plugins[symbolicName]
+			return self.pluginObjects[symbolicName]
 		except KeyError:
 			raise UnavailableResource(symbolicName)
 			

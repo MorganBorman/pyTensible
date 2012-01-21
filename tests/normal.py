@@ -12,3 +12,12 @@ pyTensible.setup_logging("normal.log")
 pluginLoader = pyTensible.PluginLoader()
 
 pluginLoader.loadPlugins(os.path.abspath("./plugins"))
+
+Events = pluginLoader.getResource("Events")
+
+def rawr_function(name, string_argument):
+	print "rawr_function", string_argument
+
+Events.register_handler("rawr", rawr_function)
+
+Events.trigger_event("rawr", "A scary event in plugin history")

@@ -7,7 +7,7 @@ class Plugin(object):
 	def load(self, pluginLoader):
 		"""Initialize the plugin."""
 		return
-	   
+	
 	@abc.abstractmethod
 	def unload(self, pluginLoader):
 		"""Deinitialize the plugin."""
