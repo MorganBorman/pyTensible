@@ -1,6 +1,7 @@
 import abc
 
 class Plugin(object):
+	"A base class for all plugin objects."
 	__metaclass__ = abc.ABCMeta
 	
 	@abc.abstractmethod
