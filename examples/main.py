@@ -8,7 +8,7 @@ addToPath("../")
 
 import pyTensible
 
-pyTensible.setup_logging("normal.log")
+pyTensible.setup_logging("example.log")
 pluginLoader = pyTensible.PluginLoader()
 
 pluginLoader.loadPlugins(os.path.abspath("./plugins"))
