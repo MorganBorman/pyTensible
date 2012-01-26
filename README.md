@@ -5,7 +5,7 @@ By: Morgan Borman
 
 Version
 ----------------
-** 0.1.2 **
+** 0.2.0 **
 
 Requirements
 ----------------
@@ -25,4 +25,3 @@ Scope
 
 * Clean and maintain current code base with the goal of moving towards a more cohesive and feature full state.
 * Comment and document current code base.
-* 
