@@ -11,9 +11,9 @@ import pyTensible
 pyTensible.setup_logging("example.log")
 pluginLoader = pyTensible.PluginLoader()
 
-pluginLoader.loadPlugins(os.path.abspath("./plugins"))
+pluginLoader.load_plugins(os.path.abspath("./plugins"))
 
-Events = pluginLoader.getResource("Events")
+Events = pluginLoader.get_resource("Events")
 
 def rawr_function(name, string_argument):
 	print "rawr_function", string_argument

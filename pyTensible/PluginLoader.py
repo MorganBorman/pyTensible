@@ -9,205 +9,211 @@ manifestFilename = "plugin.manifest"
 
 class PluginLoader:
 	def __init__(self):
-		self.manifests = {}
-		self.pluginObjects = {}
-		self.plugins = {}
-		self.providers = {}
-		self.failed = []
-		self.unloaded = False
-		self.reloadOrder = [] #Used to reload the plugins in dependency order
-			
-	def scanManifests(self, pluginPath):
-		self.manifests = {}
+		self.__manifests = {}
+		self.__suppress_list = []
+		self.__plugin_objects = {}
+		self.__plugins = {}
+		self.__providers = {}
+		self.__failed = []
+		self.__unloaded = False
+		self.__reload_order = [] #Used to reload the plug-ins in dependency order
 		
-		pluginDirectories = os.listdir(pluginPath)
+	def load_suppress_list(self, file_path):
+		"Loads the list of plug-in SymbolicNames which should not be loaded."
+		pass
+	
+	def load_plugins(self, plugin_path):
+		"Load all plug-ins (except those in the suppress list) from the specified directory."
+		logger.info('Loading plug-ins from: ' + plugin_path)
+		
+		if not os.path.isdir(plugin_path):
+			raise InvalidPluginDirectory("Given path is not a directory: " + plugin_path)
+		
+		sys.path.append(plugin_path)
+		
+		self.__scan_manifests(plugin_path)
+		
+		for SymbolicName in self.__manifests.keys():
+			self.__load_plugin(SymbolicName, None, [])
+		
+		sys.path.remove(plugin_path)
+		
+	def get_resource(self, symbolicName):
+		"Get the loaded plug-in object. This is the key to accessing resources provided by plug-ins."
+		try:
+			return self.__plugin_objects[symbolicName]
+		except KeyError:
+			raise UnavailableResource(symbolicName)
+		
+	def unload_all(self):
+		"Unload all loaded plug-ins."
+		logger.info('Unloading all plug-ins...')
+		
+		if not self.__unloaded:
+			for pluginName, pluginObject in self.__plugin_objects.items():
+				try:
+					pluginObject.unload(self)
+					logger.info("Unloaded plug-in: " + pluginName)
+				except:
+					exceptionType, exceptionValue, exceptionTraceback = sys.exc_info() #@UnusedVariable
+					logger.error("Uncaught exception occurred while unloading plugin: " + traceback.format_exc())
+				
+			self.__unloaded = True
+			
+	def __scan_manifests(self, plugin_path):
+		self.__manifests = {}
+		
+		pluginDirectories = os.listdir(plugin_path)
 		
 		for directory in pluginDirectories:
 			
-			pluginDirectory = pluginPath + '/' + directory
+			pluginDirectory = plugin_path + '/' + directory
 			manifestPath = pluginDirectory + '/' + manifestFilename
 			
 			if os.path.isdir(pluginDirectory) and os.path.exists(manifestPath):
 				try:
 					manifest = Manifest(pluginDirectory, manifestFilename)
-					self.processManifest(manifest)
+					self.__process_manifest(manifest)
 					
 				except MalformedManifest:
-					logger.error("Malformed plugin manifest: " + manifestPath)
+					logger.error("Malformed plug-in manifest: " + manifestPath)
 			else:
-				logger.error("Cannot read plugin: " + pluginDirectory)
+				logger.error("Cannot read plug-in: " + pluginDirectory)
 				
-	def processManifest(self, manifest):
+	def __process_manifest(self, manifest):
 		if manifest.Enabled:
 	
 			if manifest.Provides != None:
 			
-				if not manifest.Provides in self.providers.keys():
-					self.providers[manifest.Provides] = {}
-				self.providers[manifest.Provides][manifest.SymbolicName] = manifest
+				if not manifest.Provides in self.__providers.keys():
+					self.__providers[manifest.Provides] = {}
+				self.__providers[manifest.Provides][manifest.SymbolicName] = manifest
 	
-			self.manifests[manifest.SymbolicName] = manifest
+			self.__manifests[manifest.SymbolicName] = manifest
 		else:
-			logger.info("Plugin disabled: " + manifest.Name)	
-				
-	def loadPlugins(self, pluginPath):
-		logger.info('Loading plugins from: ' + pluginPath)
+			logger.info("plug-in disabled: " + manifest.Name)	
 		
-		if not os.path.isdir(pluginPath):
-			raise InvalidPluginDirectory("Given path is not a directory: " + pluginPath)
-		
-		sys.path.append(pluginPath)
-		
-		self.scanManifests(pluginPath)
-		
-		for SymbolicName in self.manifests.keys():
-			self.loadPlugin(SymbolicName, None, [])
-		
-		sys.path.remove(pluginPath)
-		
-	def unloadAll(self):
-		logger.info('Unloading all plugins...')
-		
-		if not self.unloaded:
-			for pluginName, pluginObject in self.pluginObjects.items():
-				try:
-					pluginObject.unload(self)
-					logger.info("Unloaded plugin: " + pluginName)
-				except:
-					exceptionType, exceptionValue, exceptionTraceback = sys.exc_info() #@UnusedVariable
-					logger.error("Uncaught exception occurred while unloading plugin: " + traceback.format_exc())
-				
-			self.unloaded = True
-		
-	def loadDependencies(self, manifest, dependList):
+	def __load_dependencies(self, manifest, depend_list):
 		for dependency in manifest.Dependencies:
 			#check if we have a cycle forming
-			if dependency.dependencyName in dependList:
+			if dependency.dependencyName in depend_list:
 				#append the name here for showing the cycle in the exception
-				dependList.append(dependency.dependencyName)
+				depend_list.append(dependency.dependencyName)
 				
-				self.failed.append(manifest.SymbolicName)
-				raise DependencyCycle(str("->".join(dependList)))
+				self.__failed.append(manifest.SymbolicName)
+				raise DependencyCycle(str("->".join(depend_list)))
 			
-			#skip ones that have previously failed to load
-			if dependency.dependencyName in self.failed:
-				#add this one to the list of failed
-				self.failed.append(manifest.SymbolicName)
+			#skip ones that have previously __failed to load
+			if dependency.dependencyName in self.__failed:
+				#add this one to the list of __failed
+				self.__failed.append(manifest.SymbolicName)
 				raise FailedDependency(dependency.dependencyName)
 			#else load the plugin
 			else: 
-				self.loadPlugin(dependency.dependencyName, dependency, dependList)
+				self.__load_plugin(dependency.dependencyName, dependency, depend_list)
 	
-	def loadRequests(self, manifest, dependList):
+	def __load_requests(self, manifest, depend_list):
 		for request in manifest.Requests:
-			for provider in self.getProviderManifests(request.requestName):
+			for provider in self.__get_provider_manifests(request.requestName):
 				#check if we have a cycle forming
-				if provider.SymbolicName in dependList:
+				if provider.SymbolicName in depend_list:
 					#append the name here for showing the cycle in the exception
-					dependList.append(provider.SymbolicName)
+					depend_list.append(provider.SymbolicName)
 				
-					self.failed.append(manifest.SymbolicName)
-					raise DependencyCycle(str("->".join(dependList)))
+					self.__failed.append(manifest.SymbolicName)
+					raise DependencyCycle(str("->".join(depend_list)))
 			
 				#skip ones that have previously failed to load
-				if provider.SymbolicName in self.failed:
-					logger.error(provider.Name + " a " + provider.Provides + " provider previously failed to load.")
+				if provider.SymbolicName in self.__failed:
+					logger.error(provider.Name + " a " + provider.Provides + " provider previously __failed to load.")
 				#else load the provider
 				else: 
 					try:
-						self.loadPlugin(provider.SymbolicName, request, dependList)
+						self.__load_plugin(provider.SymbolicName, request, depend_list)
 					except UnsatisfiedDependency:
-						logger.error(provider.Name + " a " + provider.Provides + " provider failed: missing dependencies.")
+						logger.error(provider.Name + " a " + provider.Provides + " provider __failed: missing dependencies.")
 					except MalformedPlugin:
-						logger.error(provider.Name + " a " + provider.Provides + " provider failed: malformed plugin.")
+						logger.error(provider.Name + " a " + provider.Provides + " provider __failed: malformed plug-in.")
 			
-	def loadPlugin(self, symbolicName, dependency, dependList):
-		#logger.debug("trying to load plugin: " + symbolicName)
-		"""Wrapper to __loadPlugin to provide nested exception handline for all loading of plugins"""
+	def __load_plugin(self, symbolicName, dependency, depend_list):
+		#logger.debug("trying to load plug-in: " + symbolicName)
+		"""Wrapper to __process_plugin to provide nested exception handling for all loading of plug-ins"""
 		try:
-			self.__loadPlugin(symbolicName, dependency, dependList)
+			self.__process_plugin(symbolicName, dependency, depend_list)
 		except UnsatisfiedDependency as e:
-			logger.error("Ignore plugin: " + symbolicName + " -- unsatisfied dependency: " + str(e))
+			logger.error("Ignore plug-in: " + symbolicName + " -- unsatisfied dependency: " + str(e))
 		except UnavailableResource as e:
-			logger.error("Failed plugin: " + symbolicName + " -- unsatisfied dependency: " + str(e))
+			logger.error("Failed plug-in: " + symbolicName + " -- unsatisfied dependency: " + str(e))
 		except MalformedPlugin as e:
-			logger.error("Failed plugin: " + symbolicName + " -- failed loading dependency: " + str(e))
+			logger.error("Failed plug-in: " + symbolicName + " -- __failed loading dependency: " + str(e))
 		except FailedDependency as e:
-			logger.error("Failed plugin: " + symbolicName + " -- dependency previously failed to load: " + str(e))
+			logger.error("Failed plug-in: " + symbolicName + " -- dependency previously __failed to load: " + str(e))
 		except InvalidResourceComponent as e:
-			logger.error("Failed plugin: " + symbolicName + " Required resource: " + e.resource + " did not provide a valid " + e.componentType + e.component)
+			logger.error("Failed plug-in: " + symbolicName + " Required resource: " + e.resource + " did not provide a valid " + e.componentType + e.component)
 		
-	def __loadPlugin(self, symbolicName, dependency, dependList):
-		#dependList holds the list of dependencies along the depth-first cross section of the tree. Used to find cycles.
-		dependList = dependList[:]
-		dependList.append(symbolicName)
+	def __process_plugin(self, symbolicName, dependency, depend_list):
+		#depend_list holds the list of dependencies along the depth-first cross section of the tree. Used to find cycles.
+		depend_list = depend_list[:]
+		depend_list.append(symbolicName)
 		
 		#get the manifest from the manifest list
 		try:
-			manifest = self.manifests[symbolicName]
+			manifest = self.__manifests[symbolicName]
 		except KeyError:
-			self.failed.append(symbolicName)
+			self.__failed.append(symbolicName)
 			raise UnsatisfiedDependency(symbolicName + ":" + dependency.dependencyString)
 		
-		#to check whether the dependency can actually be satisfied by loading this plugin
+		#to check whether the dependency can actually be satisfied by loading this plug-in
 		if dependency != None:
 			if dependency.satisfied(manifest.SymbolicName, manifest.Version):
 				pass #dependency is satisfied
 			else:
-				self.failed.append(manifest.SymbolicName)
+				self.__failed.append(manifest.SymbolicName)
 				raise UnsatisfiedDependency(symbolicName + ":" + dependency.dependencyString + ". Version present is: " + manifest.Version)
 		
-		#preliminary checks done. Start actually loading the plugin now
-		if not manifest.SymbolicName in self.plugins.keys():
+		#preliminary checks done. Start actually loading the plug-in now
+		if not manifest.SymbolicName in self.__plugins.keys():
 			
 			#load the dependencies
-			self.loadDependencies(manifest, dependList)
+			self.__load_dependencies(manifest, depend_list)
 			
 			#load the requests
-			self.loadRequests(manifest, dependList)
+			self.__load_requests(manifest, depend_list)
 			
-			#import the plugin
+			#import the plug-in
 			try:
-				pluginModule = __import__(manifest.SymbolicName)
+				plugin_module = __import__(manifest.SymbolicName)
 			except ImportError:
 				exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()	#@UnusedVariable
-				logger.error('Uncaught exception occured in command handler.')
+				logger.error('Uncaught exception occurred in command handler.')
 				logger.error(traceback.format_exc())
-				raise MalformedPlugin(manifest.SymbolicName + ": failed to import.")
+				raise MalformedPlugin(manifest.SymbolicName + ": __failed to import.")
 			
-			#get the plugin class from the module
+			#get the plug-in class from the module
 			try:
-				#pluginObjectClass = pluginModule.__getattribute__(manifest.SymbolicName)
-				pluginObjectClass = pluginModule.__getattribute__("Plugin")
+				pluginObjectClass = plugin_module.__getattribute__("Plugin")
 			except AttributeError:
-				self.failed.append(manifest.SymbolicName)
+				self.__failed.append(manifest.SymbolicName)
 				raise MalformedPlugin(manifest.SymbolicName + ": class is not present.")
 			
-			#check that the plugin class is a subclass of Plugin
+			#check that the plug-in's class is a subclass of Plugin
 			if not issubclass(pluginObjectClass, Plugin):
-				self.failed.append(manifest.SymbolicName)
+				self.__failed.append(manifest.SymbolicName)
 				raise MalformedPlugin(manifest.SymbolicName + ": is not derived from Plugin.")
 			
-			#add the plugin object and plugin module to the correct dictionaries
-			self.pluginObjects[manifest.SymbolicName] = pluginObjectClass()
-			self.plugins[manifest.SymbolicName] = pluginModule
+			#add the plug-in object and plug-in module to the correct dictionaries
+			self.__plugin_objects[manifest.SymbolicName] = pluginObjectClass()
+			self.__plugins[manifest.SymbolicName] = plugin_module
 			
-			#load the actual plugin
-			self.pluginObjects[manifest.SymbolicName].load(self)
-			logger.info("Loaded plugin: " + manifest.Name)
-			self.reloadOrder.append(manifest.SymbolicName)
+			#load the actual plug-in
+			self.__plugin_objects[manifest.SymbolicName].load(self)
+			logger.info("Loaded plug-in: " + manifest.Name)
+			self.__reload_order.append(manifest.SymbolicName)
 		else:
-			pass
-			#logger.debug("Already loaded: " + manifest.Name)
+			logger.debug("Already loaded: " + manifest.Name)
 			
-	def getResource(self, symbolicName):
+	def __get_provider_manifests(self, provides):
 		try:
-			return self.pluginObjects[symbolicName]
-		except KeyError:
-			raise UnavailableResource(symbolicName)
-			
-	def getProviderManifests(self, provides):
-		try:
-			return self.providers[provides].values()
+			return self.__providers[provides].values()
 		except KeyError:
 			return []
