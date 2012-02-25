@@ -4,5 +4,3 @@ SymbolicName = Events
 Version = 0.0.2
 Author = Morgan Borman
 Enabled = True
-
-[Dependencies]

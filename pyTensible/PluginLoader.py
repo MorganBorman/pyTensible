@@ -18,11 +18,11 @@ class PluginLoader:
 		self.__unloaded = False
 		self.__reload_order = [] #Used to reload the plug-ins in dependency order
 		
-	def load_suppress_list(self, file_path):
-		"Loads the list of plug-in SymbolicNames which should not be loaded."
-		pass
+	def load_suppress_list(self, suppress_list=[]):
+		"Provide a list of plug-in SymbolicNames which should not be loaded from any plug-in directory."
+		self.__suppress_list += suppress_list
 	
-	def load_plugins(self, plugin_path):
+	def load_plugins(self, plugin_path, local_suppress_list=[]):
 		"Load all plug-ins (except those in the suppress list) from the specified directory."
 		logger.info('Loading plug-ins from: ' + plugin_path)
 		
@@ -34,7 +34,7 @@ class PluginLoader:
 		self.__scan_manifests(plugin_path)
 		
 		for SymbolicName in self.__manifests.keys():
-			self.__load_plugin(SymbolicName, None, [])
+			self.__load_plugin(SymbolicName, None, [], self.__suppress_list + local_suppress_list)
 		
 		sys.path.remove(plugin_path)
 		
@@ -93,7 +93,7 @@ class PluginLoader:
 		else:
 			logger.info("plug-in disabled: " + manifest.Name)	
 		
-	def __load_dependencies(self, manifest, depend_list):
+	def __load_dependencies(self, manifest, depend_list, suppress_list):
 		for dependency in manifest.Dependencies:
 			#check if we have a cycle forming
 			if dependency.dependencyName in depend_list:
@@ -103,16 +103,16 @@ class PluginLoader:
 				self.__failed.append(manifest.SymbolicName)
 				raise DependencyCycle(str("->".join(depend_list)))
 			
-			#skip ones that have previously __failed to load
+			#skip ones that have previously failed to load
 			if dependency.dependencyName in self.__failed:
-				#add this one to the list of __failed
+				#add this one to the list of failed
 				self.__failed.append(manifest.SymbolicName)
 				raise FailedDependency(dependency.dependencyName)
-			#else load the plugin
+			#else load the plug-in
 			else: 
-				self.__load_plugin(dependency.dependencyName, dependency, depend_list)
+				self.__load_plugin(dependency.dependencyName, dependency, depend_list, suppress_list)
 	
-	def __load_requests(self, manifest, depend_list):
+	def __load_requests(self, manifest, depend_list, suppress_list):
 		for request in manifest.Requests:
 			for provider in self.__get_provider_manifests(request.requestName):
 				#check if we have a cycle forming
@@ -129,17 +129,20 @@ class PluginLoader:
 				#else load the provider
 				else: 
 					try:
-						self.__load_plugin(provider.SymbolicName, request, depend_list)
+						self.__load_plugin(provider.SymbolicName, request, depend_list, suppress_list)
 					except UnsatisfiedDependency:
-						logger.error(provider.Name + " a " + provider.Provides + " provider __failed: missing dependencies.")
+						logger.error(provider.Name + " a " + provider.Provides + " provider failed: missing dependencies.")
 					except MalformedPlugin:
-						logger.error(provider.Name + " a " + provider.Provides + " provider __failed: malformed plug-in.")
+						logger.error(provider.Name + " a " + provider.Provides + " provider failed: malformed plug-in.")
 			
-	def __load_plugin(self, symbolicName, dependency, depend_list):
+	def __load_plugin(self, symbolicName, dependency, depend_list, suppress_list):
 		#logger.debug("trying to load plug-in: " + symbolicName)
 		"""Wrapper to __process_plugin to provide nested exception handling for all loading of plug-ins"""
 		try:
-			self.__process_plugin(symbolicName, dependency, depend_list)
+			if not symbolicName in suppress_list:
+				self.__process_plugin(symbolicName, dependency, depend_list, suppress_list)
+			else:
+				logger.info("Ignore plug-in: " + symbolicName + " -- present in suppress list.")
 		except UnsatisfiedDependency as e:
 			logger.error("Ignore plug-in: " + symbolicName + " -- unsatisfied dependency: " + str(e))
 		except UnavailableResource as e:
@@ -151,7 +154,7 @@ class PluginLoader:
 		except InvalidResourceComponent as e:
 			logger.error("Failed plug-in: " + symbolicName + " Required resource: " + e.resource + " did not provide a valid " + e.componentType + e.component)
 		
-	def __process_plugin(self, symbolicName, dependency, depend_list):
+	def __process_plugin(self, symbolicName, dependency, depend_list, suppress_list):
 		#depend_list holds the list of dependencies along the depth-first cross section of the tree. Used to find cycles.
 		depend_list = depend_list[:]
 		depend_list.append(symbolicName)
@@ -175,10 +178,10 @@ class PluginLoader:
 		if not manifest.SymbolicName in self.__plugins.keys():
 			
 			#load the dependencies
-			self.__load_dependencies(manifest, depend_list)
+			self.__load_dependencies(manifest, depend_list, suppress_list)
 			
 			#load the requests
-			self.__load_requests(manifest, depend_list)
+			self.__load_requests(manifest, depend_list, suppress_list)
 			
 			#import the plug-in
 			try:
@@ -196,10 +199,10 @@ class PluginLoader:
 				self.__failed.append(manifest.SymbolicName)
 				raise MalformedPlugin(manifest.SymbolicName + ": class is not present.")
 			
-			#check that the plug-in's class is a subclass of Plugin
+			#check that the plug-in's class is a subclass of 'Plugin'
 			if not issubclass(pluginObjectClass, Plugin):
 				self.__failed.append(manifest.SymbolicName)
-				raise MalformedPlugin(manifest.SymbolicName + ": is not derived from Plugin.")
+				raise MalformedPlugin(manifest.SymbolicName + ": is not derived from the Plugin class.")
 			
 			#add the plug-in object and plug-in module to the correct dictionaries
 			self.__plugin_objects[manifest.SymbolicName] = pluginObjectClass()
