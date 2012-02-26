@@ -377,6 +377,9 @@ class PluginLoader:
 	
 	def _load_requests(self, manifest, depend_list, suppress_list):
 		for request in manifest.requests:
+			
+			
+			
 			for provider in self._get_provider_manifests(request.requestName):
 				#check if we have a cycle forming
 				if provider.symbolic_name in depend_list:
@@ -392,7 +395,7 @@ class PluginLoader:
 				#else load the provider
 				else: 
 					try:
-						self._load_plugin(provider.symbolic_name, request, depend_list, suppress_list)
+						self._load_item(provider.symbolic_name, None, depend_list, suppress_list)
 					except UnsatisfiedDependency:
 						logger.error(provider.name + " a " + provider.Provides + " provider failed: missing dependencies.")
 					except MalformedPlugin:

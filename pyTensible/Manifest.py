@@ -1,7 +1,6 @@
 import os.path
 import ConfigParser
 import Dependency
-import Request
 
 class MalformedManifest(Exception):
 	'''Invalid manifest form'''
@@ -50,6 +49,24 @@ class Manifest(object):
 		self.enabled = manifest.get("Plug-in", "Enabled") == "True"
 		
 		######################################################################
+		########################## Read Interfaces ###########################
+		######################################################################
+		'''
+		These specify which interfaces this plug-in will implement.
+		
+		Used to tell the pluginLoader which interfaces to make available at
+		module load time for subclassing.
+		'''
+		try:
+			interfaces_implemented = manifest.items("Implements")
+		except:
+			interfaces_implemented = {}
+		
+		for interface_name, interface_version_string in interfaces_implemented:
+			implementation_base_dependency = Dependency.Dependency(interface_name, interface_version_string)
+			self.interfaces_implemented.append(implementation_base_dependency)
+		
+		######################################################################
 		######################### Read Dependencies ##########################
 		######################################################################
 		'''
@@ -80,24 +97,6 @@ class Manifest(object):
 		except:
 			requests = {}
 		
-		for requestName, requestString in requests:
-			request = Request.Request(requestName, requestString)
+		for request_name, request_string in requests:
+			request = Dependency.Dependency(request_name, request_string)
 			self.requests.append(request)
-			
-		######################################################################
-		########################## Read Interfaces ###########################
-		######################################################################
-		'''
-		These specify which interfaces this plug-in will implement.
-		
-		Used to tell the pluginLoader which interfaces to make available at
-		module load time for subclassing.
-		'''
-		try:
-			interfaces_implemented = manifest.items("Implements")
-		except:
-			interfaces_implemented = {}
-		
-		for interface_name, interface_version_string in interfaces_implemented:
-			implementation_base_dependency = Dependency.Dependency(interface_name, interface_version_string)
-			self.interfaces_implemented.append(implementation_base_dependency)

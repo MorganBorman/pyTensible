@@ -1,5 +1,4 @@
 [Plug-in]
-Name = Events
 SymbolicName = Events
 Version = 0.0.2
 Defines = False
