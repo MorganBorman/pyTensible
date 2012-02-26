@@ -1,10 +1,11 @@
 [Plug-in]
-Name = Events
-SymbolicName = Events
-Version = 0.0.2
+SymbolicName = Car
+Version = 0.0.1
 Defines = False
 Author = Morgan Borman
 Enabled = True
 
 [Implements]
+Environment = (0.0.0,0.0.1]
+Vehicle = (0.0.0,0.0.1]
 Plugin = (0.0.0,0.0.1]

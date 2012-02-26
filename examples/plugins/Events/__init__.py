@@ -1,24 +1,22 @@
-import pyTensible
-
-class Plugin(pyTensible.Plugin):
+class Events(Plugin):
 	event_manager = None
 	
 	def __init__(self):
-		pyTensible.Plugin.__init__(self)
+		Plugin.__init__(self)
 		
-	def load(self, pluginLoader):
+	def load(self):
 		self.event_manager = Event_Manager()
 		
-	def unload(self, pluginLoader):
+	def unload(self):
 		pass
 	
 	def trigger_event(self, name, *args, **kwargs):
 		"Trigger an event of the given name with the given arguments. Safe even if their is no handler yet registered for that named event."
-		pyTensible.logger.info("Events: Triggering event: %s with args: %s", str(name), str(args) + str(kwargs))
+		pluginLoader.logger.info("Events: Triggering event: %s with args: %s", str(name), str(args) + str(kwargs))
 		self.event_manager.trigger_event(name, *args, **kwargs)
 		
 	def register_handler(self, name, handler):
-		pyTensible.logger.info("Events: Registering handler: %s for: %s", str(handler), str(name))
+		pluginLoader.logger.info("Events: Registering handler: %s for: %s", str(handler), str(name))
 		self.event_manager.register_handler(name, handler)
 	
 class Event_Manager:

@@ -1,10 +1,8 @@
-import pyTensible
-
-class Plugin(pyTensible.Plugin):
+class PrintEvent(Plugin):
 	def __init__(self):
-		pyTensible.Plugin.__init__(self)
+		Plugin.__init__(self)
 		
-	def load(self, pluginLoader):
+	def load(self):
 		Events = pluginLoader.get_resource("Events")
 		
 		Events.register_handler("rawr", self.print_event)

@@ -1,0 +1,6 @@
+[Plug-in]
+SymbolicName = Plugin
+Version = 0.0.1
+Defines = True
+Author = Morgan Borman
+Enabled = True

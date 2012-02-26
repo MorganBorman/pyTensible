@@ -1,9 +1,12 @@
-[Plugin]
-Name = Print Event
+[Plug-in]
 SymbolicName = PrintEvent
 Version = 0.0.1
+Defines = False
 Author = Morgan Borman
 Enabled = True
+
+[Implements]
+Plugin = (0.0.0,0.0.1]
 
 [Dependencies]
 Events = (0.0.1,0.0.2]

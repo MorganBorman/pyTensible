@@ -1,11 +1,9 @@
-import pyTensible
-
-class Plugin(pyTensible.Plugin):
+class Plugin(Plugin):
 	def __init__(self):
-		pyTensible.Plugin.__init__(self)
+		Plugin.__init__(self)
 		
-	def load(self, pluginLoader):
+	def load(self):
 		pass
 		
-	def unload(self, pluginLoader):
+	def unload(self):
 		pass

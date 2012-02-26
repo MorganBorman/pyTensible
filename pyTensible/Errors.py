@@ -8,7 +8,17 @@ class UnsatisfiedDependency(Exception):
 	def __init__(self, value=''):
 		Exception.__init__(self, value)
 		
+class UnsatisfiedInterface(Exception):
+	'''Unsatisfied interface'''
+	def __init__(self, value=''):
+		Exception.__init__(self, value)
+		
 class FailedDependency(Exception):
+	'''Unsatisfied dependency'''
+	def __init__(self, value=''):
+		Exception.__init__(self, value)
+
+class MalformedPlugin(Exception):
 	'''Unsatisfied dependency'''
 	def __init__(self, value=''):
 		Exception.__init__(self, value)

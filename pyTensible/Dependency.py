@@ -16,16 +16,16 @@ Which means the range from 1.0.0 inclusive to 2.0.0 exclusive is acceptable.
 () = exclusive
 """
 
-def getVersionParts(version):
+def get_version_parts(version):
 	version = version.split('.')
 	if len(version) > 3:
 		version = version[:3]
 	version = map(int, version)
 	return version
 
-def versionLess(version1, version2):
-	version1 = getVersionParts(version1)
-	version2 = getVersionParts(version2)
+def version_less(version1, version2):
+	version1 = get_version_parts(version1)
+	version2 = get_version_parts(version2)
 	for i in range(3):
 		if version1[i] > version2[i]:
 			return False
@@ -35,9 +35,9 @@ def versionLess(version1, version2):
 			pass #and look at the next part
 	return False
 	
-def versionGreater(version1, version2):
-	version1 = getVersionParts(version1)
-	version2 = getVersionParts(version2)
+def version_greater(version1, version2):
+	version1 = get_version_parts(version1)
+	version2 = get_version_parts(version2)
 	for i in range(3):
 		if version1[i] > version2[i]:
 			return True
@@ -47,58 +47,64 @@ def versionGreater(version1, version2):
 			pass #and look at the next part
 	return False
 	
-def versionEqual(version1, version2):
-	version1 = getVersionParts(version1)
-	version2 = getVersionParts(version2)
+def version_equal(version1, version2):
+	version1 = get_version_parts(version1)
+	version2 = get_version_parts(version2)
 	for i in range(3):
 		if version1[i] != version2[i]:
 			return False
 		else: #==
 			pass #and look at the next part
 	return True
+
+def bstrip(string):
+	return string.rstrip().lstrip()
 	
-def satisfiesRange(version1, versionRange):
+def satisfies_range(version1, version_range):
 	"""checks one parameter against the version given"""
-	if not versionRange[0] in ['[', '(']:
+	if not version_range[0] in ['[', '(']:
 		raise MalformedVersionRange()
 	
-	if not versionRange[-1] in [']', ')']:
+	if not version_range[-1] in [']', ')']:
 		raise MalformedVersionRange()
 	
-	values = versionRange[1:-1].split(',')
+	values = version_range[1:-1].split(',')
 	lower = values[0]
 	upper = values[1]
 	
-	if versionRange[0] == '[':
-		if versionLess(version1, lower):
+	if version_range[0] == '[':
+		if version_less(version1, lower):
 			return False
 	else:
-		if versionLess(version1, lower) or versionEqual(version1, lower):
+		if version_less(version1, lower) or version_equal(version1, lower):
 			return False
 		
-	if versionRange[-1] == ']':
-		if versionGreater(version1, upper):
+	if version_range[-1] == ']':
+		if version_greater(version1, upper):
 			return False
 	else:
-		if versionGreater(version1, upper) or versionEqual(version1, upper):
+		if version_greater(version1, upper) or version_equal(version1, upper):
 			return False
 		
 	return True
 
-class Dependency:
+class Dependency(object):
 	"""A class to hold a dependency and encapsulate dependency satisfaction checks"""
-	def __init__(self, dependencyName, dependencyString):
+	
+	dependency_name = ""
+	dependency_range = ""
+	
+	def __init__(self, dependency_name, dependency_string):
 		"""takes a dependency name and version string"""
-		self.dependencyName = dependencyName
-		self.dependencyString = dependencyString
-		self.dependencyRange = dependencyString.rstrip().lstrip()
+		self.dependency_name = dependency_name
+		self.dependency_range = dependency_string
 		
-	def satisfied(self, dependencyName, version):
+	def satisfied(self, dependency_name, version):
 		"""Determines whether a dependency would be satisfied by the indicated version of plugin"""
-		if dependencyName != self.dependencyName:
+		if dependency_name != self.dependency_name:
 			return False
 		
-		if not satisfiesRange(version, self.dependencyRange):
+		if not satisfies_range(version, self.dependency_range):
 			return False
 		return True
 

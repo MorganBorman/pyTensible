@@ -1,0 +1,6 @@
+[Plug-in]
+SymbolicName = Vehicle
+Defines = True
+Version = 0.0.1
+Author = Morgan Borman
+Enabled = True
