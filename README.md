@@ -5,7 +5,7 @@ By: Morgan Borman
 
 Version
 ----------------
-** 0.7.6 **
+** 1.0.1 **
 
 Requirements
 ----------------

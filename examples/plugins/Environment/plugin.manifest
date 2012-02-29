@@ -1,6 +1,0 @@
-[Plug-in]
-SymbolicName = Environment
-Defines = True
-Version = 0.0.1
-Author = Morgan Borman
-Enabled = True

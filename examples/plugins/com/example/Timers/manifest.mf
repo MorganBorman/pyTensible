@@ -1,0 +1,22 @@
+[Plug-in]
+SymbolicName = com.example.Timers
+Version = 0.0.2
+Author = Morgan Borman
+Enabled = True
+
+[Interfaces]
+ITimer
+ITimerManager
+
+[Resources]
+Timer[ITimer]
+timer_manager(ITimerManager)
+
+[Implements]
+pyTensible.Plugin = [1.0.0,1.0.0]
+
+[Dependencies]
+com.example.Events = [0.0.2,0.0.2]
+
+[Requests]
+#None

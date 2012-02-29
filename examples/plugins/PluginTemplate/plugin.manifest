@@ -1,6 +1,0 @@
-[Plug-in]
-SymbolicName = PluginTemplate
-Version = 0.0.1
-Defines = False
-Author = Morgan Borman
-Enabled = False

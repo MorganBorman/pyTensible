@@ -1,9 +1,0 @@
-[Plug-in]
-SymbolicName = Events
-Version = 0.0.2
-Defines = False
-Author = Morgan Borman
-Enabled = True
-
-[Implements]
-Plugin = (0.0.0,0.0.1]

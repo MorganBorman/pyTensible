@@ -13,11 +13,21 @@ pluginLoader = pyTensible.PluginLoader()
 
 pluginLoader.load_plugins(os.path.abspath("./plugins"))
 
-Events = pluginLoader.get_resource("Events")
+com = pluginLoader.get_resource("com")
 
-def rawr_function(name, string_argument):
-	print "rawr_function", string_argument
+def handler_function(event):
+	print "Event triggered:", event.name, event.args, event.kwargs
 
-Events.register_handler("rawr", rawr_function)
+com.example.Events.event_manager.register_handler("first", handler_function)
+com.example.Events.event_manager.register_handler("second", handler_function)
 
-Events.trigger_event("rawr", "A scary event in plugin history")
+first_event = com.example.Events.Event('first', ("The first event",))
+second_event = com.example.Events.Event('second', ("the second event",))
+
+timer = com.example.Timers.Timer(5, second_event)
+
+com.example.Timers.timer_manager.add_timer(timer)
+
+com.example.Events.event_manager.trigger_event(first_event)
+
+pluginLoader.unload_all()

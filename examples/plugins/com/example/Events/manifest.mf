@@ -1,0 +1,23 @@
+[Plug-in]
+SymbolicName = com.example.Events
+Version = 0.0.2
+Author = Morgan Borman
+Enabled = True
+
+[Interfaces]
+IEvent
+IEventManager
+
+[Resources]
+Event[IEvent]
+event_manager(IEventManager)
+trigger_event
+
+[Implements]
+pyTensible.Plugin = [1.0.0,1.0.0]
+
+[Dependencies]
+#None
+
+[Requests]
+#None
