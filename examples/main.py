@@ -9,11 +9,11 @@ addToPath("../")
 import pyTensible
 
 pyTensible.setup_logging("example.log")
-pluginLoader = pyTensible.PluginLoader()
+plugin_loader = pyTensible.PluginLoader()
 
-pluginLoader.load_plugins(os.path.abspath("./plugins"))
+plugin_loader.load_plugins(os.path.abspath("./plugins"))
 
-com = pluginLoader.get_resource("com")
+com = plugin_loader.get_resource("com")
 
 def handler_function(event):
 	print "Event triggered:", event.name, event.args, event.kwargs
@@ -30,4 +30,4 @@ com.example.Timers.timer_manager.add_timer(timer)
 
 com.example.Events.event_manager.trigger_event(first_event)
 
-pluginLoader.unload_all()
+plugin_loader.unload_all()
