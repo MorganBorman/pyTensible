@@ -1,12 +1,20 @@
+# __init__.py
+# Package initializer script for pyTensible.base.pyTensible
+#  Contains the actual code for the plug-in loading mechanism as well as the Interface that all 
+#  plug-ins must implement.
+# Copyright (c) 2012 Morgan Borman
+# E-mail: morgan.borman@gmail.com
+
+# This software is licensed under the terms of the Zlib license.
+# http://en.wikipedia.org/wiki/Zlib_License
+
 import os, sys, traceback, abc
 
-from pyTensible.Manifest import Manifest, MalformedManifest
+from pyTensible.Manifest import Manifest, MalformedManifest, filename
 from pyTensible.Errors import * #@UnusedWildImport
 import pyTensible.Logging as Logging
 from pyTensible.Accessor import Accessor
 from pyTensible.Namespace import Namespace
-
-manifest_filename = "manifest.mf"
 
 class IPlugin:
 	"A base class for all plug-in objects."
@@ -203,7 +211,7 @@ class PluginLoader(IPluginLoader):
 		
 		for directory in os.listdir(plugins_path):
 			sub_directory = os.path.join(plugins_path, directory)
-			manifest_path = os.path.join(sub_directory, manifest_filename)
+			manifest_path = os.path.join(sub_directory, filename)
 			
 			if os.path.isdir(sub_directory):
 				new_namespace = namespace[:]

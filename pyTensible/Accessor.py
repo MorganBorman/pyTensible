@@ -1,3 +1,11 @@
+# Accessor.py
+# Class used to provide access to the namespace hierarchy of the loaded plug-ins
+# Copyright (c) 2012 Morgan Borman
+# E-mail: morgan.borman@gmail.com
+
+# This software is licensed under the terms of the Zlib license.
+# http://en.wikipedia.org/wiki/Zlib_License
+
 '''
 Requirements
 -------------
@@ -15,6 +23,7 @@ assert(test2.bar.baz == "bozo")
 
 test.bar should raise AttributeError()
 '''
+
 from Namespace import Namespace
 
 class Accessor:

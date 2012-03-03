@@ -1,3 +1,16 @@
+# Logging.py
+# Allows simple configuration of the pyTensible logging
+# Copyright (c) 2012 Morgan Borman
+# E-mail: morgan.borman@gmail.com
+
+# This software is licensed under the terms of the Zlib license.
+# http://en.wikipedia.org/wiki/Zlib_License
+
+"""
+TODO: 	This needs to be redone so that custom loggers can be provided assuming 
+		they implement the same interface as the Python logging ones do.
+"""
+
 import logging
 
 logging_path = "pyTensible.log"
