@@ -3,6 +3,11 @@ pyTensible: A simple lightweight extension framework for python
 ---
 By: Morgan Borman
 
+License
+----------------
+
+This software is licensed under the terms of the Zlib license.
+
 Version
 ----------------
 ** 1.0.1 **
