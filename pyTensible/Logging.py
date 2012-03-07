@@ -32,6 +32,10 @@ def setup_logging(path=logging_path, console_level=logging.ERROR, file_level=log
 	# add the handlers to the logger
 	logger.addHandler(fh)
 	logger.addHandler(ch)
+	
+def replace_logger(replacement_logger):
+	global logger
+	logger = replacement_logger
 
 logger = logging.getLogger('pyTensible')
 logger.setLevel(logging.DEBUG)
