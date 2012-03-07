@@ -368,7 +368,8 @@ class PluginLoader(IPluginLoader):
 			
 			self.logger.info("Loaded plug-in: " + manifest.symbolic_name)
 		else:
-			self.logger.debug("Already loaded: " + manifest.symbolic_name)
+			#self.logger.debug("Already loaded: " + manifest.symbolic_name)
+			pass
 			
 	def _load_plugin_module(self, plugins_path, symbolic_name):
 		module_name = symbolic_name.split('.')[-1]
