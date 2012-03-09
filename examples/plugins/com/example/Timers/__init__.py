@@ -1,3 +1,5 @@
+import pyTensible, abc
+
 class Timers(pyTensible.Plugin):
 	def __init__(self):
 		pyTensible.Plugin.__init__(self)
@@ -45,7 +47,7 @@ class RTimer(ITimer):
 	_events = []
 	
 	def __init__(self, how_long, *events):
-		Events = pyTensible.plugin_loader.get_resource('com.example.Events')
+		import com.example.Events as Events
 		
 		start_time = time.time()
 		
@@ -123,7 +125,7 @@ class RTimerManager(ITimerManager, threading.Thread):
 		self._event.set()
 					
 	def _fire_off(self, events):
-		Events = pyTensible.plugin_loader.get_resource('com.example.Events')
+		import com.example.Events as Events
 		
 		for event in events:
 			Events.event_manager.trigger_event(event)

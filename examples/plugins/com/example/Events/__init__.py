@@ -1,3 +1,5 @@
+import pyTensible, abc
+
 class Events(pyTensible.Plugin):
 	def __init__(self):
 		pyTensible.Plugin.__init__(self)

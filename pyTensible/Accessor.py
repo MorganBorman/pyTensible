@@ -29,13 +29,14 @@ from Namespace import Namespace
 class Accessor:
 	def __init__(self, namespace, namespace_hierarchy):
 		'''
-		Accessors are the key to pyTensible. Basically an Accessor is an alias to the loaded interfaces/resources within pyTensible
-		
-		If strict=False then the Accessor is lazily evaluated. This means it does not throw an exception at runtime if the specified
-		namespace does not exist.
+		Accessors are the key to pyTensible. Basically an Accessor is an alias to the loaded interfaces/resources within pyTensible.
 		'''
 		self.__namespace = namespace
 		self.__namespace_hierarchy = namespace_hierarchy
+		
+	@property
+	def __module__(self):
+		return '.'.join(self.__namespace)
 	
 	def __getattr__(self, name):
 		try:

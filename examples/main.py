@@ -13,7 +13,7 @@ plugin_loader = pyTensible.PluginLoader()
 
 plugin_loader.load_plugins(os.path.abspath("./plugins"))
 
-com = plugin_loader.get_resource("com")
+import com
 
 def handler_function(event):
 	print "Event triggered:", event.name, event.args, event.kwargs
