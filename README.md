@@ -10,7 +10,7 @@ This software is licensed under the terms of the Zlib license.
 
 Version
 ----------------
-** 1.1.2 **
+** 1.1.3 **
 
 Requirements
 ----------------
