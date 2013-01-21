@@ -337,6 +337,7 @@ class PluginLoader(IPluginLoader):
                 tb = exceptionTraceback.tb_next
                 self.logger.error(manifest.symbolic_name + ": Uncaught exception occurred in plug-in class load method.")
                 self.logger.error("Traceback (most recent call last):\n" + ''.join(traceback.format_tb(tb)))
+                self.logger.error('\n'.join(traceback.format_exception_only(sys.exc_type, sys.exc_value)))
                 raise MalformedPlugin()
             
             self._process_exported_resources(manifest, exported_resources)
