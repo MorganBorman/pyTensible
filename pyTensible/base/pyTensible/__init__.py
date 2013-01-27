@@ -459,7 +459,10 @@ class PluginLoader(IPluginLoader):
                     interface_namespace = '.'.join(resource_interface.split('.')[:-1])
                     interface_name = resource_interface.split('.')[-1]
                     
-                    interface = sys.modules[interface_namespace].__getattr__(interface_name)
+                    try:
+                        interface = sys.modules[interface_namespace].__getattr__(interface_name)
+                    except (IndexError, AttributeError):
+                        raise MalformedPlugin("The manifest states that the resource '%s' will provide or implement the interface '%s' but the specified interface could not be found." %(resource['resource_symbolic_name'], resource_interface))
                     
                 #add_to_hierarchical_dictionary(namespace_hierarchy, resources_exported[resource['resource_symbolic_name']], self._resource_hierarchy)
             
