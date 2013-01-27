@@ -67,6 +67,11 @@ class IPluginLoader:
     
     @abc.abstractmethod
     def get_providers(self, interface):
+        "Get all resources which provide this interface as a dictionary indexed by fully qualified symbolic_name."
+        pass
+    
+    @abc.abstractmethod
+    def get_instances(self, interface):
         "Get all resources which implement this interface as a dictionary indexed by fully qualified symbolic_name."
         pass
     
@@ -116,9 +121,13 @@ class PluginLoader(IPluginLoader):
     #self._namespace_hierarchy['com']['example']['Events'] = Namespace({},{})
     _namespace_hierarchy = {}
     
-    #This holds dictionaries of resources which implement specific interfaces, 
-    #keyed as follows: self._provider_hierarchy['com.example.Events.IEventManager']['com.example.Events.event_manager'] = event_manager
+    #This holds dictionaries of resources which provide specific interfaces, 
+    #keyed as follows: self._provider_hierarchy['com.example.Events.IEventManager']['com.example.Events.EventManager'] = EventManager
     _provider_hierarchy = {}
+    
+    #This holds dictionaries of resources which implement specific interfaces, 
+    #keyed as follows: self._instance_hierarchy['com.example.Events.IEventManager']['com.example.Events.event_manager'] = event_manager
+    _instance_hierarchy = {}
     
     #this holds the manifests of each provider keyed by the fully qualified symbolic name
     #each is keyed by a fully qualified symbolic_name eg self._provider_manifests["com.example.IEvents"] = manifest
@@ -146,6 +155,8 @@ class PluginLoader(IPluginLoader):
         self._namespace_hierarchy = {}
         self._namespace_accessor = Accessor([], self._namespace_hierarchy)
         self._providers = {}
+        self._provider_hierarchy = {}
+        self._instance_hierarchy = {}
         self._failed_list = []
         self._load_order = []
         self._provider_manifests = {}
@@ -169,9 +180,16 @@ class PluginLoader(IPluginLoader):
         self._load_plugins(plugins_path, plugin_list, local_suppress_list)
     
     def get_providers(self, interface):
-        "Get all loaded plug-in objects which implement this interface as a dictionary indexed by symbolic_name."
+        "Get all loaded plug-in resources which provide this interface as a dictionary indexed by symbolic_name."
         try:
             return self._provider_hierarchy[interface]
+        except KeyError:
+            return {}
+        
+    def get_instances(self, interface):
+        "Get all loaded plug-in resources which implement this interface as a dictionary indexed by symbolic_name."
+        try:
+            return self._instance_hierarchy[interface]
         except KeyError:
             return {}
     
@@ -443,13 +461,6 @@ class PluginLoader(IPluginLoader):
                     
                     interface = sys.modules[interface_namespace].__getattr__(interface_name)
                     
-                if resource['resource_type'] == type:
-                    if not issubclass(resources_exported[resource['resource_symbolic_name']], interface):
-                        raise MalformedPlugin("The manifest states that the resource class '%s' will implement the interface '%s' but it does not." %(resource['resource_symbolic_name'], interface))
-                elif resource['resource_type'] == object:
-                    if not isinstance(resources_exported[resource['resource_symbolic_name']], interface):
-                        raise MalformedPlugin("The manifest states that the resource object '%s' will implement the interface '%s' but it does not." %(resource['resource_symbolic_name'], interface))
-                    
                 #add_to_hierarchical_dictionary(namespace_hierarchy, resources_exported[resource['resource_symbolic_name']], self._resource_hierarchy)
             
                 if not local:
@@ -457,13 +468,25 @@ class PluginLoader(IPluginLoader):
                 else:
                     fully_qualified_interface_name = manifest.symbolic_name + '.' + resource['resource_interface']
                     
-                    
                 fully_qualified_resource_name = manifest.symbolic_name + '.' + resource['resource_symbolic_name']
                 
-                if not fully_qualified_interface_name in self._provider_hierarchy.keys():
-                    self._provider_hierarchy[fully_qualified_interface_name] = {}
+                if resource['resource_type'] == type:
+                    if not issubclass(resources_exported[resource['resource_symbolic_name']], interface):
+                        raise MalformedPlugin("The manifest states that the resource class '%s' will implement the interface '%s' but it does not." %(resource['resource_symbolic_name'], interface))
+                    
+                    if not fully_qualified_interface_name in self._provider_hierarchy.keys():
+                        self._provider_hierarchy[fully_qualified_interface_name] = {}
+                        
+                    self._provider_hierarchy[fully_qualified_interface_name][fully_qualified_resource_name] = resources_exported[resource['resource_symbolic_name']]
+                    
+                elif resource['resource_type'] == object:
+                    if not isinstance(resources_exported[resource['resource_symbolic_name']], interface):
+                        raise MalformedPlugin("The manifest states that the resource object '%s' will implement the interface '%s' but it does not." %(resource['resource_symbolic_name'], interface))
                 
-                self._provider_hierarchy[fully_qualified_interface_name][fully_qualified_resource_name] = resources_exported[resource['resource_symbolic_name']]
+                    if not fully_qualified_interface_name in self._instance_hierarchy.keys():
+                        self._instance_hierarchy[fully_qualified_interface_name] = {}
+                    
+                    self._instance_hierarchy[fully_qualified_interface_name][fully_qualified_resource_name] = resources_exported[resource['resource_symbolic_name']]
                 
         namespace = Namespace(interfaces_exported, resources_exported)
         add_to_hierarchical_dictionary(namespace_hierarchy, namespace, self._namespace_hierarchy)

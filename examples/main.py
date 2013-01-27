@@ -28,6 +28,9 @@ timer = com.example.Timers.Timer(5, second_event)
 
 com.example.Timers.timer_manager.add_timer(timer)
 
+print plugin_loader.get_providers("com.example.Events.IEvent")
+print plugin_loader.get_instances("com.example.Events.IEventManager")
+
 com.example.Events.event_manager.trigger_event(first_event)
 
 plugin_loader.unload_all()
