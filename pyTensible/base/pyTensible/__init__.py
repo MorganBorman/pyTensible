@@ -249,38 +249,36 @@ class PluginLoader(IPluginLoader):
                         self._provider_manifests[fully_qualified_interface] = []
                         
                     self._provider_manifests[fully_qualified_interface].append(manifest)
-            
+            return True
         else:
             self.logger.info("plug-in disabled: " + manifest.symbolic_name)
-        return True
-        #except MalformedManifest:
-        #    logger.error("Malformed plug-in manifest: " + manifest_path)
-        #    return False
+            return False
             
     def _load_plugins(self, plugins_path, plugin_list, local_suppress_list):
         
         for symbolic_name in plugin_list:
             depend_list = []
-            self._load_plugin(plugins_path, symbolic_name, None, depend_list, self._suppress_list + local_suppress_list)
+            
+            try:
+                self._load_plugin(plugins_path, symbolic_name, None, depend_list, self._suppress_list + local_suppress_list)
+            except UnsatisfiedDependency as e:
+                self.logger.error("Ignore loading: " + symbolic_name + " -- unsatisfied dependency: " + str(e))
+            except UnavailableResource as e:
+                self.logger.error("Failed loading: " + symbolic_name + " -- unsatisfied dependency: " + str(e))
+            except MalformedPlugin as e:
+                self.logger.error("Failed loading: " + symbolic_name + " -- failed loading")# dependency: " + str(e))
+            except FailedDependency as e:
+                self.logger.error("Failed loading: " + symbolic_name + " -- dependency failed loading: " + str(e))
+            except InvalidResourceComponent as e:
+                self.logger.error("Failed loading: " + symbolic_name + " required resource: " + e.resource + " did not provide a valid " + e.componentType + e.component)
             
     def _load_plugin(self, plugins_path, symbolic_name, dependency, depend_list, suppress_list):
         #logger.debug("trying to load plug-in: " + symbolic_name)
         """Wrapper to _process_plugin to provide nested exception handling for all loading of interfaces and plug-ins"""
-        try:
-            if not symbolic_name in suppress_list:
-                self._process_plugin(plugins_path, symbolic_name, dependency, depend_list, suppress_list)
-            else:
-                self.logger.info("Ignore loading: " + symbolic_name + " -- present in suppress list.")
-        except UnsatisfiedDependency as e:
-            self.logger.error("Ignore loading: " + symbolic_name + " -- unsatisfied dependency: " + str(e))
-        except UnavailableResource as e:
-            self.logger.error("Failed loading: " + symbolic_name + " -- unsatisfied dependency: " + str(e))
-        except MalformedPlugin as e:
-            self.logger.error("Failed loading: " + symbolic_name + " -- failed loading")# dependency: " + str(e))
-        except FailedDependency as e:
-            self.logger.error("Failed loading: " + symbolic_name + " -- dependency failed loading: " + str(e))
-        except InvalidResourceComponent as e:
-            self.logger.error("Failed loading: " + symbolic_name + " required resource: " + e.resource + " did not provide a valid " + e.componentType + e.component)
+        if not symbolic_name in suppress_list:
+            self._process_plugin(plugins_path, symbolic_name, dependency, depend_list, suppress_list)
+        else:
+            self.logger.info("Ignore loading: " + symbolic_name + " -- present in suppress list.")
             
     def _process_plugin(self, plugins_path, symbolic_name, dependency, depend_list, suppress_list):
         #depend_list holds the list of dependencies along the depth-first cross section of the tree. Used to find cycles.
@@ -292,7 +290,7 @@ class PluginLoader(IPluginLoader):
             manifest = self._manifests[symbolic_name]
         except KeyError:
             self._failed_list.append(symbolic_name)
-            raise UnsatisfiedDependency(symbolic_name + ":" + str(dependency.dependency_range))
+            raise UnsatisfiedDependency(symbolic_name)
         
         #to check whether the dependency can actually be satisfied by loading this plug-in
         if dependency != None:
