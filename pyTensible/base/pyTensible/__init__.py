@@ -229,30 +229,34 @@ class PluginLoader(IPluginLoader):
         return new_plugin_list
     
     def _preprocess_plugin(self, manifest_path, new_namespace):
-        #try:
-        manifest = Manifest(manifest_path, new_namespace)
-        if manifest.enabled:
-            self._manifests[manifest.symbolic_name] = manifest
-            
-            for resource in manifest.resources_provided:
-                resource_interface = resource['resource_interface']
+        try:
+            manifest = Manifest(manifest_path, new_namespace)
+            if manifest.enabled:
+                self._manifests[manifest.symbolic_name] = manifest
                 
-                if resource_interface is not None:
-                    resource_interface_namespace = resource_interface.split('.')
+                for resource in manifest.resources_provided:
+                    resource_interface = resource['resource_interface']
                     
-                    if len(resource_interface_namespace) < 2:
-                        fully_qualified_interface = manifest.symbolic_name + '.' + resource_interface
-                    else:
-                        fully_qualified_interface = resource_interface
+                    if resource_interface is not None:
+                        resource_interface_namespace = resource_interface.split('.')
                         
-                    if fully_qualified_interface not in self._provider_manifests.keys():
-                        self._provider_manifests[fully_qualified_interface] = []
-                        
-                    self._provider_manifests[fully_qualified_interface].append(manifest)
-            return True
-        else:
-            self.logger.info("plug-in disabled: " + manifest.symbolic_name)
-            return False
+                        if len(resource_interface_namespace) < 2:
+                            fully_qualified_interface = manifest.symbolic_name + '.' + resource_interface
+                        else:
+                            fully_qualified_interface = resource_interface
+                            
+                        if fully_qualified_interface not in self._provider_manifests.keys():
+                            self._provider_manifests[fully_qualified_interface] = []
+                            
+                        self._provider_manifests[fully_qualified_interface].append(manifest)
+                return True
+            else:
+                self.logger.info("plug-in disabled: " + manifest.symbolic_name)
+        except:
+            exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()    #@UnusedVariable
+            self.logger.error('Uncaught exception occurred reading plug-in manifest.mf file.')
+            self.logger.error(traceback.format_exc())
+        return False
             
     def _load_plugins(self, plugins_path, plugin_list, local_suppress_list):
         
@@ -361,7 +365,7 @@ class PluginLoader(IPluginLoader):
                 tb = exceptionTraceback.tb_next
                 self.logger.error(manifest.symbolic_name + ": Uncaught exception occurred in plug-in class load method.")
                 self.logger.error("Traceback (most recent call last):\n" + ''.join(traceback.format_tb(tb)))
-                self.logger.error('\n'.join(traceback.format_exception_only(sys.exc_type, sys.exc_value)))
+                self.logger.error('\n'.join(traceback.format_exception_only(sys.exc_type, sys.exc_value))) #@UndefinedVariable
                 raise MalformedPlugin()
             
             self._process_exported_resources(manifest, exported_resources)
