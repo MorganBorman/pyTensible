@@ -368,7 +368,18 @@ class PluginLoader(IPluginLoader):
                 self.logger.error('\n'.join(traceback.format_exception_only(sys.exc_type, sys.exc_value))) #@UndefinedVariable
                 raise MalformedPlugin()
             
-            self._process_exported_resources(manifest, exported_resources)
+            try:
+                self._process_exported_resources(manifest, exported_resources)
+            except MalformedPlugin as e:
+                self._failed_list.append(manifest.symbolic_name)
+                self.logger.error(str(e))
+                raise MalformedPlugin()
+            except:
+                self._failed_list.append(manifest.symbolic_name)
+                exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()    #@UnusedVariable
+                self.logger.error('Uncaught exception occurred processing plug-in exported resources.')
+                self.logger.error(traceback.format_exc())
+                raise MalformedPlugin()
             
             self._plugin_modules[manifest.symbolic_name] = plugin_module
             self._plugin_objects[manifest.symbolic_name] = plugin_object
