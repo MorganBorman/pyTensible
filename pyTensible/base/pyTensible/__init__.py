@@ -319,6 +319,7 @@ class PluginLoader(IPluginLoader):
                 self._failed_list.append(manifest.symbolic_name)
                 raise
             except ImportError:
+                self._failed_list.append(manifest.symbolic_name)
                 exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()    #@UnusedVariable
                 self.logger.error('Uncaught exception occurred in plug-in.')
                 self.logger.error(traceback.format_exc())
@@ -342,7 +343,14 @@ class PluginLoader(IPluginLoader):
                 self.logger.error(manifest.symbolic_name + ": plug-in class is not derived from the pyTensible.Plugin base class.")
                 raise MalformedPlugin()
                 
-            plugin_object = plugin_class()
+            try:
+                plugin_object = plugin_class()
+            except:
+                self._failed_list.append(manifest.symbolic_name)
+                exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()    #@UnusedVariable
+                self.logger.error('Uncaught exception occurred in plug-in object instantiation.')
+                self.logger.error(traceback.format_exc())
+                raise MalformedPlugin()
             
             try:
                 exported_resources = plugin_object.load()
