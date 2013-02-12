@@ -405,6 +405,10 @@ class PluginLoader(IPluginLoader):
         plugin_file = os.path.join(plugin_directory, "__init__.py")
         
         description = ('.py', 'r', imp.PY_SOURCE)
+        
+        if not os.path.isfile(plugin_file):
+            self.logger.error("The __init__.py file for the following plug-in is missing: %s." % symbolic_name)
+            raise MalformedPlugin(symbolic_name + ": failed to import.")
 
         try:
             add_to_hierarchical_dictionary(module_namespace, {}, self._namespace_hierarchy)
