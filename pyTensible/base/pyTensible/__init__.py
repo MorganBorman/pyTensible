@@ -202,6 +202,14 @@ class PluginLoader(IPluginLoader):
     ########################## Private methods ###########################
     ######################################################################
     
+    def _log_exc(self, message, exc_info):
+        exceptionType, exceptionValue, exceptionTraceback = exc_info    #@UnusedVariable
+        #Skip the stack frames from within pyTensible itself
+        tb = exceptionTraceback.tb_next
+        self.logger.error(message)
+        message = "Traceback (most recent call last):\n" + ''.join(traceback.format_tb(tb)) + '\n'.join(traceback.format_exception_only(sys.exc_type, sys.exc_value)) #@UndefinedVariable
+        self.logger.error(message)
+    
     def _preprocess_plugins(self, plugins_path, namespace):
         "Finds all the plug-ins, calls _preprocess_plugin on each, and returns a list of the fully qualified symbolic_names"
         new_plugin_list = []
@@ -229,30 +237,34 @@ class PluginLoader(IPluginLoader):
         return new_plugin_list
     
     def _preprocess_plugin(self, manifest_path, new_namespace):
-        #try:
-        manifest = Manifest(manifest_path, new_namespace)
-        if manifest.enabled:
-            self._manifests[manifest.symbolic_name] = manifest
-            
-            for resource in manifest.resources_provided:
-                resource_interface = resource['resource_interface']
+        try:
+            manifest = Manifest(manifest_path, new_namespace)
+            if manifest.enabled:
+                self._manifests[manifest.symbolic_name] = manifest
                 
-                if resource_interface is not None:
-                    resource_interface_namespace = resource_interface.split('.')
+                for resource in manifest.resources_provided:
+                    resource_interface = resource['resource_interface']
                     
-                    if len(resource_interface_namespace) < 2:
-                        fully_qualified_interface = manifest.symbolic_name + '.' + resource_interface
-                    else:
-                        fully_qualified_interface = resource_interface
+                    if resource_interface is not None:
+                        resource_interface_namespace = resource_interface.split('.')
                         
-                    if fully_qualified_interface not in self._provider_manifests.keys():
-                        self._provider_manifests[fully_qualified_interface] = []
-                        
-                    self._provider_manifests[fully_qualified_interface].append(manifest)
-            return True
-        else:
-            self.logger.info("plug-in disabled: " + manifest.symbolic_name)
-            return False
+                        if len(resource_interface_namespace) < 2:
+                            fully_qualified_interface = manifest.symbolic_name + '.' + resource_interface
+                        else:
+                            fully_qualified_interface = resource_interface
+                            
+                        if fully_qualified_interface not in self._provider_manifests.keys():
+                            self._provider_manifests[fully_qualified_interface] = []
+                            
+                        self._provider_manifests[fully_qualified_interface].append(manifest)
+                return True
+            else:
+                self.logger.info("plug-in disabled: " + manifest.symbolic_name)
+        except:
+            exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()    #@UnusedVariable
+            self.logger.error('Uncaught exception occurred reading plug-in manifest.mf file.')
+            self.logger.error(traceback.format_exc())
+        return False
             
     def _load_plugins(self, plugins_path, plugin_list, local_suppress_list):
         
@@ -319,6 +331,7 @@ class PluginLoader(IPluginLoader):
                 self._failed_list.append(manifest.symbolic_name)
                 raise
             except ImportError:
+                self._failed_list.append(manifest.symbolic_name)
                 exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()    #@UnusedVariable
                 self.logger.error('Uncaught exception occurred in plug-in.')
                 self.logger.error(traceback.format_exc())
@@ -342,7 +355,14 @@ class PluginLoader(IPluginLoader):
                 self.logger.error(manifest.symbolic_name + ": plug-in class is not derived from the pyTensible.Plugin base class.")
                 raise MalformedPlugin()
                 
-            plugin_object = plugin_class()
+            try:
+                plugin_object = plugin_class()
+            except:
+                self._failed_list.append(manifest.symbolic_name)
+                exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()    #@UnusedVariable
+                self.logger.error('Uncaught exception occurred in plug-in object instantiation.')
+                self.logger.error(traceback.format_exc())
+                raise MalformedPlugin()
             
             try:
                 exported_resources = plugin_object.load()
@@ -353,10 +373,21 @@ class PluginLoader(IPluginLoader):
                 tb = exceptionTraceback.tb_next
                 self.logger.error(manifest.symbolic_name + ": Uncaught exception occurred in plug-in class load method.")
                 self.logger.error("Traceback (most recent call last):\n" + ''.join(traceback.format_tb(tb)))
-                self.logger.error('\n'.join(traceback.format_exception_only(sys.exc_type, sys.exc_value)))
+                self.logger.error('\n'.join(traceback.format_exception_only(sys.exc_type, sys.exc_value))) #@UndefinedVariable
                 raise MalformedPlugin()
             
-            self._process_exported_resources(manifest, exported_resources)
+            try:
+                self._process_exported_resources(manifest, exported_resources)
+            except MalformedPlugin as e:
+                self._failed_list.append(manifest.symbolic_name)
+                self.logger.error(str(e))
+                raise MalformedPlugin()
+            except:
+                self._failed_list.append(manifest.symbolic_name)
+                exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()    #@UnusedVariable
+                self.logger.error('Uncaught exception occurred processing plug-in exported resources.')
+                self.logger.error(traceback.format_exc())
+                raise MalformedPlugin()
             
             self._plugin_modules[manifest.symbolic_name] = plugin_module
             self._plugin_objects[manifest.symbolic_name] = plugin_object
@@ -382,6 +413,10 @@ class PluginLoader(IPluginLoader):
         plugin_file = os.path.join(plugin_directory, "__init__.py")
         
         description = ('.py', 'r', imp.PY_SOURCE)
+        
+        if not os.path.isfile(plugin_file):
+            self.logger.error("The __init__.py file for the following plug-in is missing: %s." % symbolic_name)
+            raise MalformedPlugin(symbolic_name + ": failed to import.")
 
         try:
             add_to_hierarchical_dictionary(module_namespace, {}, self._namespace_hierarchy)
@@ -398,10 +433,9 @@ class PluginLoader(IPluginLoader):
             try:
                 plugin_module = imp.load_module(symbolic_name, fp, plugin_file, description)
             except:
-                self.logger.error("An error occurred on import of %s." % symbolic_name)
-                self.logger.error(traceback.format_exc())
+                self._log_exc("An error occurred on import of {}.".format(symbolic_name), sys.exc_info())
                 raise MalformedPlugin(symbolic_name + ": failed to import.")
-            
+                
             plugin_module.__name__ = symbolic_name
             plugin_module.__file__ = plugin_file
             plugin_module.__path__ = plugin_directory
