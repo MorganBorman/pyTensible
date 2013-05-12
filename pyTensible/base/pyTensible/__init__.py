@@ -160,7 +160,8 @@ class PluginLoader(IPluginLoader):
         self._failed_list = []
         self._load_order = []
         self._provider_manifests = {}
-        
+        self._plugins_local_modules = {}
+
         if local_logger != None:
             self.logger = local_logger
     
@@ -429,7 +430,7 @@ class PluginLoader(IPluginLoader):
             fp = open(plugin_file, 'r')
             
             sys.path.append(plugin_directory)
-            
+
             try:
                 plugin_module = imp.load_module(symbolic_name, fp, plugin_file, description)
             except:
@@ -442,6 +443,16 @@ class PluginLoader(IPluginLoader):
             plugin_module.__package__ = '.'.join(module_namespace)
             
             sys.path.remove(plugin_directory)
+
+            # List of local modules
+            local_module_list = filter(
+                lambda item: hasattr(item[1], "__file__") and item[1].__file__.startswith(plugin_directory),
+                    sys.modules.items())
+            
+            # Remove local modules
+            for module in local_module_list:
+                self._plugins_local_modules[(symbolic_name, module[0])] = sys.modules[module[0]]
+                del sys.modules[module[0]]
             
             return plugin_module
         finally:
